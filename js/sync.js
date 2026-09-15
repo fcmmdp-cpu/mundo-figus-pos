@@ -53,6 +53,26 @@ const Sync = (() => {
   // cual en la cola: el próximo intento la reenvía (inofensivo, porque
   // el servidor es idempotente por ID Venta) y esta vez sí completa el
   // marcado local.
+  // Verificación de respaldo contra el servidor. Se usa SOLO cuando el envío
+  // de una operación falla: la falla puede ser puramente de comunicación
+  // (corte de red justo al reconectar, o la redirección interna que hacen
+  // los Web Apps de Apps Script al responder) mientras la escritura ya se
+  // ejecutó del lado del servidor. Antes de resignarse a dejarla pendiente,
+  // se confirma el estado real. Es de solo lectura: nunca escribe nada.
+  async function verificarExistenciaRemota(idVenta) {
+    try {
+      const url = await getGasUrl();
+      if (!url || !idVenta) return null;
+      const res = await fetch(`${url}?action=checkVenta&id=${encodeURIComponent(idVenta)}`);
+      if (!res.ok) return null;
+      const json = await res.json();
+      if (!json.ok) return null;
+      return json.data; // { existe, estado }
+    } catch (_) {
+      return null;
+    }
+  }
+
   async function intentarSincronizar() {
     if (sincronizando) return;
     sincronizando = true;
@@ -64,18 +84,28 @@ const Sync = (() => {
       pendientes.sort((a, b) => a.createdAt - b.createdAt);
 
       for (const op of pendientes) {
-        let confirmadaPorServidor = false;
+        let confirmada = false;
         try {
           await enviarOperacion(op);
-          confirmadaPorServidor = true;
+          confirmada = true;
         } catch (err) {
           op.attempts = (op.attempts || 0) + 1;
           op.lastError = String(err.message || err);
-          try { await DB.put('syncQueue', op); } catch (_) { /* best-effort */ }
-          continue; // esta falló: se sigue con la siguiente de la cola igual
+
+          const idVentaOp = op.payload && op.payload.IDVenta;
+          const remoto = await verificarExistenciaRemota(idVentaOp);
+          const yaAplicadaEnServidor = remoto && remoto.existe &&
+            (op.type === 'venta' || remoto.estado === 'Anulada');
+
+          if (yaAplicadaEnServidor) {
+            confirmada = true; // el servidor confirma que ya está: se trata igual que un envío exitoso
+          } else {
+            try { await DB.put('syncQueue', op); } catch (_) { /* best-effort */ }
+            continue; // realmente no está aplicada: se sigue con la siguiente de la cola igual
+          }
         }
 
-        if (confirmadaPorServidor) {
+        if (confirmada) {
           try {
             await DB.del('syncQueue', op.opId);
             const venta = await DB.getByKey('ventas', op.payload.IDVenta);

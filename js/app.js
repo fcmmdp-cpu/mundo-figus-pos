@@ -14,7 +14,11 @@ const App = (() => {
   // ---------- Registro de Service Worker ----------
   function registrarSW() {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js').catch(() => {});
+      // Ruta y scope absolutos, sin ambigüedad: la app vive en el
+      // subdirectorio /mundo-figus-pos/ de GitHub Pages.
+      navigator.serviceWorker.register('/mundo-figus-pos/service-worker.js', {
+        scope: '/mundo-figus-pos/',
+      }).catch(() => {});
     }
   }
 
@@ -154,6 +158,14 @@ const App = (() => {
   // ---------- Modales genéricos ----------
   function abrirModal(id) { $(id).classList.remove('hidden'); }
   function cerrarModal(id) { $(id).classList.add('hidden'); }
+
+  // Reemplaza alert(): en una PWA instalada en modo standalone, los diálogos
+  // nativos del navegador (alert/confirm/prompt) pueden no mostrarse.
+  function mostrarMensaje(texto, ms = 1800) {
+    $('modalMensajeTexto').textContent = texto;
+    abrirModal('modalMensaje');
+    setTimeout(() => cerrarModal('modalMensaje'), ms);
+  }
 
   function wireCierreModales() {
     document.querySelectorAll('[data-close]').forEach((btn) => {
@@ -448,24 +460,31 @@ const App = (() => {
 
     // Acción de mantenimiento, separada del flujo normal: borra SOLO
     // Historial (ventas) y la cola de sincronización de este dispositivo.
-    // No toca articulos, combos, detalleCombos, espera ni config.
+    // No toca articulos, combos, detalleCombos, espera ni config, y no
+    // envía ninguna instrucción a Google Sheets.
+    // Usa el modal propio de la app (no window.prompt/alert): en una PWA
+    // instalada en modo standalone, esos diálogos nativos pueden no
+    // mostrarse en absoluto, y la app seguía de largo sin borrar nada ni
+    // avisar — esa era la causa real de que Historial no se vaciara.
     $('btnResetPruebas').onclick = async () => {
       const pendientes = await Sync.pendientesCount();
       const totalVentas = (await DB.getAll('ventas')).length;
       if (totalVentas === 0 && pendientes === 0) {
-        alert('No hay ventas locales para borrar.');
+        mostrarMensaje('No hay ventas locales para borrar.');
         return;
       }
-      const aviso = `Esto borra ${totalVentas} venta(s) del Historial local y ${pendientes} operación(es) pendiente(s) de este dispositivo.\n\nUsar solo DESPUÉS de haber ejecutado el reset del lado de Google Sheets.\n\nEscribí BORRAR para confirmar.`;
-      const respuesta = prompt(aviso);
-      if (respuesta !== 'BORRAR') return;
+      abrirModal('modalConfirmarReset');
+    };
+
+    $('btnConfirmarResetPruebas').onclick = async () => {
+      cerrarModal('modalConfirmarReset');
       await DB.clearStore('ventas');
       await DB.clearStore('syncQueue');
       renderCarrito();
       renderProductos();
       await actualizarInfoConfig();
       actualizarBadgeSync();
-      alert('Historial y cola de sincronización locales borrados.');
+      mostrarMensaje('Ventas locales de prueba eliminadas correctamente.');
     };
   }
 

@@ -74,4 +74,31 @@ Procedimiento:
 6. Recién después, en la app, Configuración → **"Borrar ventas de prueba (local)"** — borra únicamente el Historial y la cola de sincronización de ese dispositivo (nunca toca catálogo, artículos, combos ni configuración). Pide escribir `BORRAR` para confirmar.
 
 No corras el paso 6 antes que el reset del lado de Sheets: el orden importa para no perder de vista qué faltaba sincronizar.
+
+## 7. Corrección: sincronización y reset local (v2)
+
+- **`js/sync.js`**: si el envío de una venta/anulación falla, antes de dejarla pendiente se consulta `action=checkVenta` en Apps Script (solo lectura) para confirmar si el servidor ya la había aplicado (por ejemplo, si la escritura llegó pero la confirmación no volvió al cliente por un corte de red o una redirección de Apps Script). Si el servidor confirma que ya está, se marca sincronizada sin reenviar.
+- **`gas/Code.gs`**: nuevo `action=checkVenta&id=<IDVenta>` en `doGet`, de solo lectura. No modifica `Ventas Nueva`, `Ventas Detalle`, `Artículos` ni nada más.
+- **"Borrar ventas de prueba (local)"** dejó de usar `window.prompt`/`alert`: en una PWA instalada en modo standalone esos diálogos nativos pueden no mostrarse, y la acción seguía de largo sin confirmar ni avisar, sin borrar nada. Ahora usa un modal propio de la app.
+- **`service-worker.js`**: `CACHE_NAME` pasó a `v2` y el `install` ahora fuerza descarga fresca (`{cache:'reload'}`) de cada archivo, para asegurar que los dispositivos ya instalados actualicen a esta versión. **Recordatorio para el futuro:** cada vez que se publique un cambio en `index.html`, `css/` o `js/`, hay que subir el número de `CACHE_NAME` en `service-worker.js`, o los dispositivos ya instalados van a seguir sirviendo la versión vieja indefinidamente.
+
+## 8. Corrección: PWA instalada no reabría en Android (v3)
+
+Causa: rutas relativas ambiguas (`manifest.json` con `start_url`/`scope` relativos al propio manifest, registro del Service Worker sin `scope` explícito, sin `id` estable) combinadas con un `fetch` handler que no trataba las solicitudes de navegación (`request.mode === 'navigate'`) como un caso aparte. Al reabrir desde el ícono instalado, cualquier desajuste entre la URL de navegación real y la clave de caché podía terminar en una respuesta de red redirigida — que Chrome rechaza usar como respuesta a una navegación desde un Service Worker — dejando la app en blanco.
+
+Corregido:
+- `manifest.json`: `start_url`, `scope` e íconos con ruta absoluta `/mundo-figus-pos/...`, y `id` estable agregado.
+- `index.html`: manifest, íconos, CSS y todos los `<script>` con ruta absoluta `/mundo-figus-pos/...`.
+- `js/app.js`: `registrarSW()` registra con ruta y `scope` absolutos.
+- `service-worker.js`: `CACHE_NAME` subido a `v3`; todas las rutas de `ARCHIVOS` son absolutas; el `fetch` handler ahora separa las solicitudes de navegación (network-first, con fallback explícito a `/mundo-figus-pos/index.html` cacheado) del resto del shell (cache-first, como antes).
+
+**Importante:** como la app se movió de rutas relativas a `/mundo-figus-pos/...`, si alguna vez cambia el nombre del repositorio o el subdirectorio de publicación, hay que actualizar `BASE` en `service-worker.js` y las rutas en `manifest.json`/`index.html`/`app.js` en conjunto.
+
+## 9. Corrección: scroll de colecciones y grilla de productos (v3)
+
+`#panelProductos` heredaba `overflow: hidden` sin que sus hijos flex tuvieran `min-height: 0`, y `.chips` usaba `flex-wrap: wrap` — en pantallas bajas (celular Android horizontal), las colecciones que no entraban en una fila quedaban directamente fuera de la vista, sin ningún scroll que las alcanzara.
+
+Corregido en `css/styles.css`:
+- `.chips` pasa a fila única (`flex-wrap: nowrap`) con scroll horizontal táctil (`overflow-x: auto`, `-webkit-overflow-scrolling: touch`) y no se encoge (`flex-shrink: 0` en el contenedor y en cada botón).
+- `#panelProductos`, `.grid-productos`, `#panelCarrito` y `.lineas-carrito` reciben `min-height: 0` (y `min-width: 0` donde corresponde) para que el scroll vertical de la grilla de productos y del carrito funcionen de forma independiente dentro de sus contenedores flex, como ya venía funcionando el resto del diseño de escritorio/tablet — no se tocó nada de ese comportamiento.
 - La hoja "Feria Histórico" no se toca en ningún punto del código.

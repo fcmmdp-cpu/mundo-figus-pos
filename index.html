@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Mundo Figus — Caja</title>
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="/mundo-figus-pos/manifest.json">
 <meta name="theme-color" content="#ff7a1a">
-<link rel="icon" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/styles.css">
+<link rel="icon" href="/mundo-figus-pos/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/mundo-figus-pos/icons/icon-192.png">
+<link rel="stylesheet" href="/mundo-figus-pos/css/styles.css">
 </head>
 <body>
 
@@ -193,15 +193,32 @@
   </div>
 </div>
 
-<script src="js/db.js"></script>
-<script src="js/idgen.js"></script>
-<script src="js/stock.js"></script>
-<script src="js/cart.js"></script>
-<script src="js/sync.js"></script>
-<script src="js/catalog.js"></script>
-<script src="js/sales.js"></script>
-<script src="js/espera.js"></script>
-<script src="js/reports.js"></script>
-<script src="js/app.js"></script>
+<!-- Modal: confirmar reset de pruebas (local) -->
+<div id="modalConfirmarReset" class="modal hidden">
+  <div class="modal-box">
+    <h2 class="alerta">Borrar ventas de prueba (local)</h2>
+    <p>Esta acción eliminará las ventas almacenadas localmente en este dispositivo. No modificará Google Sheets. ¿Continuar?</p>
+    <button id="btnConfirmarResetPruebas" class="btn-peligro btn-opcion">SÍ, BORRAR</button>
+    <button class="btn-cerrar" data-close="modalConfirmarReset">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal: mensaje genérico (reemplaza alert()) -->
+<div id="modalMensaje" class="modal modal-flash hidden">
+  <div class="modal-box confirmacion">
+    <div id="modalMensajeTexto"></div>
+  </div>
+</div>
+
+<script src="/mundo-figus-pos/js/db.js"></script>
+<script src="/mundo-figus-pos/js/idgen.js"></script>
+<script src="/mundo-figus-pos/js/stock.js"></script>
+<script src="/mundo-figus-pos/js/cart.js"></script>
+<script src="/mundo-figus-pos/js/sync.js"></script>
+<script src="/mundo-figus-pos/js/catalog.js"></script>
+<script src="/mundo-figus-pos/js/sales.js"></script>
+<script src="/mundo-figus-pos/js/espera.js"></script>
+<script src="/mundo-figus-pos/js/reports.js"></script>
+<script src="/mundo-figus-pos/js/app.js"></script>
 </body>
 </html>

@@ -35,10 +35,27 @@ function doGet(e) {
     if (action === 'getCatalog') {
       return respond_({ ok: true, data: obtenerCatalogo_() });
     }
+    if (action === 'checkVenta') {
+      return respond_({ ok: true, data: checkVenta_(e.parameter.id) });
+    }
     return respond_({ ok: false, error: 'Acción no reconocida' });
   } catch (err) {
     return respond_({ ok: false, error: String(err) });
   }
+}
+
+// Solo lectura. Le permite al cliente confirmar si una venta puntual ya
+// quedó aplicada del lado del servidor cuando el envío falló por un motivo
+// de comunicación (no por rechazo del servidor). No modifica nada.
+function checkVenta_(idVenta) {
+  if (!idVenta) return { existe: false, estado: null };
+  const sheetVentas = ss_().getSheetByName(SHEET_VENTAS_NUEVA);
+  const fila = buscarFilaPorIdVenta_(sheetVentas, idVenta);
+  if (fila === -1) return { existe: false, estado: null };
+  const headers = obtenerEncabezados_(sheetVentas);
+  const colEstado = headers.indexOf('Estado') + 1;
+  const estado = sheetVentas.getRange(fila, colEstado).getValue();
+  return { existe: true, estado };
 }
 
 function obtenerCatalogo_() {
@@ -489,12 +506,12 @@ function auditoriaResetPruebas() {
   sheet.appendRow(['  · Ya Anuladas (su stock ya se había repuesto; no se revierte de nuevo)', r.ventasAnuladasCount]);
   sheet.appendRow(['Líneas de Ventas Detalle a eliminar', r.totalLineasADeletar]);
   sheet.appendRow(['Artículos cuyo stock será modificado', Object.keys(r.lineasPorArticuloConfirmadas).length]);
-  sheet.appendRow([]);
+  sheet.appendRow(['']);
 
   sheet.appendRow(['VENTAS QUE SE VAN A ELIMINAR']);
   sheet.appendRow(['ID Venta', 'Fecha', 'Hora', 'Estado', 'Total Cobrado']);
   r.ventasPrueba.forEach((v) => sheet.appendRow([v.IDVenta, v.Fecha, v.Hora, v.Estado, v.TotalCobrado]));
-  sheet.appendRow([]);
+  sheet.appendRow(['']);
 
   sheet.appendRow(['IMPACTO EN STOCK (solo ventas Confirmada; combos ya expandidos a sus componentes)']);
   sheet.appendRow(['ID Artículo', 'Nombre', 'Stock actual', 'Cantidad a devolver', 'Stock resultante']);
@@ -505,11 +522,11 @@ function auditoriaResetPruebas() {
     const resultante = actual !== null ? actual + devolver : null;
     sheet.appendRow([id, art ? art['Artículo'] : '(no encontrado en Artículos)', actual, devolver, resultante]);
   });
-  sheet.appendRow([]);
+  sheet.appendRow(['']);
 
   sheet.appendRow(['TRATAMIENTO DE COMBOS']);
   sheet.appendRow(['Los combos vendidos no reciben ni pierden stock propio (no tienen). Todo el stock devuelto va a los artículos componentes según Detalle Combos, multiplicado por la cantidad de combos vendidos en cada línea.']);
-  sheet.appendRow([]);
+  sheet.appendRow(['']);
 
   sheet.appendRow(['SIGUIENTE PASO']);
   sheet.appendRow(['Si este resumen es correcto: cambiar RESET_PRUEBAS_AUTORIZADO a true en el código y ejecutar ejecutarResetVentasPrueba().']);

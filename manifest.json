@@ -2,14 +2,15 @@
   "name": "Mundo Figus — Caja",
   "short_name": "MF Caja",
   "description": "Caja/POS offline para ferias de Mundo Figus",
-  "start_url": "./index.html",
-  "scope": "./",
+  "id": "/mundo-figus-pos/",
+  "start_url": "/mundo-figus-pos/index.html",
+  "scope": "/mundo-figus-pos/",
   "display": "standalone",
   "orientation": "landscape",
   "background_color": "#ff7a1a",
   "theme_color": "#ff7a1a",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/mundo-figus-pos/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/mundo-figus-pos/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
   ]
 }
