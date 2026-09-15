@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Mundo Figus — Caja</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff7a1a">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header id="topbar">
+  <div class="brand">Mundo Figus</div>
+  <div id="syncIndicator" class="sync-indicator">Sincronizado</div>
+  <nav class="topnav">
+    <button data-action="espera">En espera <span id="badgeEspera" class="badge hidden">0</span></button>
+    <button data-action="historial">Historial</button>
+    <button data-action="resumen">Resumen de jornada</button>
+    <button data-action="config">Configuración</button>
+  </nav>
+</header>
+
+<main id="posScreen" class="screen">
+  <section id="panelProductos">
+    <div id="categorias" class="categorias"></div>
+    <input id="buscador" type="search" placeholder="Buscar producto..." class="buscador">
+    <div id="filtroColeccion" class="chips hidden"></div>
+    <div id="gridProductos" class="grid-productos"></div>
+  </section>
+
+  <section id="panelCarrito">
+    <div id="lineasCarrito" class="lineas-carrito"></div>
+    <div class="carrito-footer">
+      <div class="descuento-info hidden" id="descuentoInfo"></div>
+      <div class="total-row">
+        <span>TOTAL</span>
+        <span id="totalCarrito">$0</span>
+      </div>
+      <div class="acciones-carrito">
+        <button id="btnMas" class="btn-secundario">MÁS</button>
+        <button id="btnEnEspera" class="btn-secundario">EN ESPERA</button>
+      </div>
+      <button id="btnCobrar" class="btn-cobrar" disabled>COBRAR</button>
+    </div>
+  </section>
+</main>
+
+<!-- Modal: métodos de pago -->
+<div id="modalCobro" class="modal hidden">
+  <div class="modal-box">
+    <h2>Cobrar <span id="cobroTotal"></span></h2>
+    <div class="botones-pago">
+      <button data-pago="Efectivo" class="btn-pago">EFECTIVO</button>
+      <button data-pago="Transferencia" class="btn-pago">TRANSFERENCIA</button>
+      <button data-pago="Mixto" class="btn-pago">MIXTO</button>
+    </div>
+    <button class="btn-cerrar" data-close="modalCobro">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal: pago mixto -->
+<div id="modalMixto" class="modal hidden">
+  <div class="modal-box">
+    <h2>Pago mixto</h2>
+    <p>Total: <strong id="mixtoTotal"></strong></p>
+    <label>Efectivo</label>
+    <input id="mixtoEfectivo" type="number" inputmode="decimal" class="input-grande">
+    <label>Transferencia (calculado)</label>
+    <input id="mixtoTransferencia" type="number" inputmode="decimal" class="input-grande" readonly>
+    <button id="btnConfirmarMixto" class="btn-cobrar">CONFIRMAR</button>
+    <button class="btn-cerrar" data-close="modalMixto">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal: MÁS -->
+<div id="modalMas" class="modal hidden">
+  <div class="modal-box">
+    <h2>Más opciones</h2>
+    <button id="btnDescuento" class="btn-opcion">Aplicar descuento</button>
+    <button id="btnModPrecio" class="btn-opcion">Modificar precio de una línea</button>
+    <button id="btnVaciar" class="btn-opcion btn-peligro">Vaciar pedido</button>
+    <button class="btn-cerrar" data-close="modalMas">Cerrar</button>
+  </div>
+</div>
+
+<!-- Modal: descuento / total final -->
+<div id="modalDescuento" class="modal hidden">
+  <div class="modal-box">
+    <h2>Descuento</h2>
+    <p>Subtotal: <strong id="descSubtotal"></strong></p>
+    <label>Total final a cobrar</label>
+    <input id="inputTotalFinal" type="number" inputmode="decimal" class="input-grande">
+    <button id="btnConfirmarDescuento" class="btn-cobrar">APLICAR</button>
+    <button class="btn-cerrar" data-close="modalDescuento">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal: modificar precio de línea -->
+<div id="modalPrecioLinea" class="modal hidden">
+  <div class="modal-box">
+    <h2>Modificar precio</h2>
+    <div id="listaLineasPrecio"></div>
+    <button class="btn-cerrar" data-close="modalPrecioLinea">Cerrar</button>
+  </div>
+</div>
+
+<!-- Modal: confirmación de venta -->
+<div id="modalConfirmacion" class="modal modal-flash hidden">
+  <div class="modal-box confirmacion">
+    <div class="check">✓</div>
+    <div>VENTA REGISTRADA</div>
+  </div>
+</div>
+
+<!-- Modal: stock insuficiente -->
+<div id="modalStock" class="modal hidden">
+  <div class="modal-box">
+    <h2 class="alerta">STOCK INSUFICIENTE</h2>
+    <button class="btn-cerrar" data-close="modalStock">Entendido</button>
+  </div>
+</div>
+
+<!-- Modal: en espera -->
+<div id="modalEspera" class="modal hidden">
+  <div class="modal-box">
+    <h2>Pedidos en espera</h2>
+    <div id="listaEspera"></div>
+    <button class="btn-cerrar" data-close="modalEspera">Cerrar</button>
+  </div>
+</div>
+
+<!-- Modal: guardar en espera (etiqueta opcional) -->
+<div id="modalGuardarEspera" class="modal hidden">
+  <div class="modal-box">
+    <h2>Poner en espera</h2>
+    <label>Referencia (opcional)</label>
+    <input id="inputEtiquetaEspera" type="text" class="input-grande" placeholder="Ej: Cliente campera roja">
+    <button id="btnConfirmarEspera" class="btn-cobrar">GUARDAR</button>
+    <button class="btn-cerrar" data-close="modalGuardarEspera">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal: historial -->
+<div id="modalHistorial" class="modal hidden">
+  <div class="modal-box modal-ancho">
+    <h2>Historial de ventas</h2>
+    <input id="buscadorHistorial" type="search" placeholder="Buscar por fecha, importe o producto..." class="buscador">
+    <div id="listaHistorial" class="lista-historial"></div>
+    <button class="btn-cerrar" data-close="modalHistorial">Cerrar</button>
+  </div>
+</div>
+
+<!-- Modal: detalle de venta / anular -->
+<div id="modalDetalleVenta" class="modal hidden">
+  <div class="modal-box">
+    <h2>Venta <span id="detalleVentaId"></span></h2>
+    <div id="detalleVentaBody"></div>
+    <button id="btnAnularVenta" class="btn-peligro btn-opcion">ANULAR VENTA</button>
+    <button class="btn-cerrar" data-close="modalDetalleVenta">Cerrar</button>
+  </div>
+</div>
+
+<!-- Modal: resumen de jornada -->
+<div id="modalResumen" class="modal hidden">
+  <div class="modal-box">
+    <h2>Resumen de jornada</h2>
+    <input id="fechaResumen" type="date" class="input-grande">
+    <div id="resumenBody"></div>
+    <button class="btn-cerrar" data-close="modalResumen">Cerrar</button>
+  </div>
+</div>
+
+<!-- Modal: configuración -->
+<div id="modalConfig" class="modal hidden">
+  <div class="modal-box">
+    <h2>Configuración</h2>
+    <label>URL de Google Apps Script (Web App)</label>
+    <input id="inputGasUrl" type="text" class="input-grande" placeholder="https://script.google.com/macros/s/.../exec">
+    <button id="btnGuardarUrl" class="btn-opcion">Guardar URL</button>
+    <hr>
+    <button id="btnActualizarCatalogo" class="btn-opcion">ACTUALIZAR CATÁLOGO</button>
+    <div id="catalogoInfo" class="info-chica"></div>
+    <hr>
+    <button id="btnSincronizarAhora" class="btn-opcion">SINCRONIZAR AHORA</button>
+    <div id="syncInfo" class="info-chica"></div>
+    <button class="btn-cerrar" data-close="modalConfig">Cerrar</button>
+  </div>
+</div>
+
+<script src="js/db.js"></script>
+<script src="js/idgen.js"></script>
+<script src="js/stock.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/catalog.js"></script>
+<script src="js/sales.js"></script>
+<script src="js/espera.js"></script>
+<script src="js/reports.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
