@@ -94,6 +94,26 @@ Corregido:
 
 **Importante:** como la app se movió de rutas relativas a `/mundo-figus-pos/...`, si alguna vez cambia el nombre del repositorio o el subdirectorio de publicación, hay que actualizar `BASE` en `service-worker.js` y las rutas en `manifest.json`/`index.html`/`app.js` en conjunto.
 
+## 10. Corrección: la PWA instalada no relanzaba en Android
+
+Causa encontrada: `"orientation": "landscape"` en `manifest.json`. Un WebAPK con orientación bloqueada puede quedar trabado al intentar recrear la Activity nativa cuando Android reclama el proceso en segundo plano (común en varios fabricantes, incluso sin cerrar la app manualmente); un reinicio completo del teléfono resetea ese estado y permite abrir una vez más, hasta repetirse el ciclo.
+
+Corregido: se eliminó por completo el campo `orientation` de `manifest.json`, sin reemplazarlo por otro bloqueo. No se tocó `service-worker.js`, `start_url`, `scope`, `id` ni ningún código de inicialización — no se encontró causa ahí.
+
+**Nota operativa:** como el cambio está en `manifest.json`, para que un dispositivo ya instalado lo tome hace falta desinstalar y volver a instalar el ícono (igual que con el cambio de `start_url`/`scope`/`id` anterior) — un manifest ya asociado a un WebAPK no se re-lee solo. `CACHE_NAME` en `service-worker.js` se dejó exactamente igual (`v3`), a pedido explícito; por eso, para una tablet/celular que YA tiene la app instalada y NO se reinstala, ni el manifest nuevo ni el CSS más compacto de este punto van a aplicarse hasta que se reinstale o se suba `CACHE_NAME` en una futura actualización.
+
+## 11. Ajuste: más espacio vertical en horizontal (celular)
+
+En `css/styles.css`, sin tocar la estructura ni la proporción catálogo/carrito:
+
+- `#topbar`: de `padding: 10px 16px; height: 56px` a `padding: 6px 14px; height: 44px` (y `#posScreen` ajustado a `calc(100% - 44px)` para no dejar hueco).
+- `.categorias button`: `padding` vertical de `16px` a `10px` (se mantiene `font-size: 16px` y `font-weight: 700`, siguen siendo cómodos al tacto).
+- `.categorias`: `gap` y `margin-bottom` de `8px` a `6px` — menos separación entre categorías y respecto de lo que sigue.
+- `.buscador`: `padding` de `12px` a `8px 12px`, `margin-bottom` de `8px` a `6px`.
+- `.chips`: `margin-bottom` de `8px` a `6px` (el resto — fila única deslizable, `flex-shrink: 0` — queda intacto).
+
+No se tocó `.grid-productos` en sí: al reducir todo lo de arriba, automáticamente le queda más alto disponible (sigue con `flex: 1; min-height: 0; overflow-y: auto`). En tablet, donde ya sobraba alto, este ajuste no cambia nada visualmente perceptible — el espacio extra recuperado en celular simplemente se suma al que ya tenía la grilla en pantallas más altas.
+
 ## 9. Corrección: scroll de colecciones y grilla de productos (v3)
 
 `#panelProductos` heredaba `overflow: hidden` sin que sus hijos flex tuvieran `min-height: 0`, y `.chips` usaba `flex-wrap: wrap` — en pantallas bajas (celular Android horizontal), las colecciones que no entraban en una fila quedaban directamente fuera de la vista, sin ningún scroll que las alcanzara.

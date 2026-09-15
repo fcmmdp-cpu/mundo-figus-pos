@@ -6,7 +6,6 @@
   "start_url": "/mundo-figus-pos/index.html",
   "scope": "/mundo-figus-pos/",
   "display": "standalone",
-  "orientation": "landscape",
   "background_color": "#ff7a1a",
   "theme_color": "#ff7a1a",
   "icons": [

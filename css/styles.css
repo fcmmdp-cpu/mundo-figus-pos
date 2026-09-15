@@ -17,34 +17,34 @@ input { font-family: inherit; }
 
 #topbar {
   display: flex; align-items: center; gap: 16px;
-  background: var(--naranja); color: white; padding: 10px 16px; height: 56px;
+  background: var(--naranja); color: white; padding: 6px 14px; height: 44px;
 }
 .brand { font-weight: 700; font-size: 20px; }
 .sync-indicator { font-size: 13px; background: rgba(0,0,0,0.15); padding: 4px 10px; border-radius: 12px; }
 .topnav { margin-left: auto; display: flex; gap: 8px; }
 .topnav button {
-  background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 14px;
+  background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px;
   border-radius: 8px; font-size: 14px; position: relative;
 }
 .badge { background: var(--rojo); border-radius: 10px; padding: 1px 7px; font-size: 12px; margin-left: 4px; }
 
-#posScreen { display: flex; height: calc(100% - 56px); min-height: 0; }
+#posScreen { display: flex; height: calc(100% - 44px); min-height: 0; }
 
 #panelProductos { flex: 1.6; display: flex; flex-direction: column; padding: 10px; overflow: hidden; min-height: 0; min-width: 0; }
-.categorias { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; flex-shrink: 0; }
+.categorias { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; flex-shrink: 0; }
 .categorias button {
-  flex: 1; min-width: 100px; padding: 16px 8px; font-size: 16px; font-weight: 700;
+  flex: 1; min-width: 100px; padding: 10px 8px; font-size: 16px; font-weight: 700;
   border: none; border-radius: 12px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 .categorias button.activa { background: var(--naranja); color: white; }
 
-.buscador { padding: 12px; font-size: 16px; border: 1px solid var(--gris-borde); border-radius: 10px; margin-bottom: 8px; flex-shrink: 0; }
+.buscador { padding: 8px 12px; font-size: 16px; border: 1px solid var(--gris-borde); border-radius: 10px; margin-bottom: 6px; flex-shrink: 0; }
 
 /* Colecciones: una sola fila horizontal deslizable con el dedo, nunca
    varias filas — si no entran todas, se recorren con scroll, no se pierden. */
 .chips {
   display: flex; gap: 6px; flex-wrap: nowrap; overflow-x: auto; flex-shrink: 0;
-  margin-bottom: 8px; padding-bottom: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: thin;
+  margin-bottom: 6px; padding-bottom: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: thin;
 }
 .chips button {
   padding: 6px 14px; border-radius: 14px; border: 1px solid var(--gris-borde); background: white;
