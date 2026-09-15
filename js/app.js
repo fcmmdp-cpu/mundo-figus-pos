@@ -445,6 +445,40 @@ const App = (() => {
       await actualizarInfoConfig();
       actualizarBadgeSync();
     };
+
+    // Acción de mantenimiento, separada del flujo normal: borra SOLO
+    // Historial (ventas) y la cola de sincronización de este dispositivo.
+    // No toca articulos, combos, detalleCombos, espera ni config.
+    $('btnResetPruebas').onclick = async () => {
+      const pendientes = await Sync.pendientesCount();
+      const totalVentas = (await DB.getAll('ventas')).length;
+      if (totalVentas === 0 && pendientes === 0) {
+        alert('No hay ventas locales para borrar.');
+        return;
+      }
+      const aviso = `Esto borra ${totalVentas} venta(s) del Historial local y ${pendientes} operación(es) pendiente(s) de este dispositivo.\n\nUsar solo DESPUÉS de haber ejecutado el reset del lado de Google Sheets.\n\nEscribí BORRAR para confirmar.`;
+      const respuesta = prompt(aviso);
+      if (respuesta !== 'BORRAR') return;
+      await DB.clearStore('ventas');
+      await DB.clearStore('syncQueue');
+      renderCarrito();
+      renderProductos();
+      await actualizarInfoConfig();
+      actualizarBadgeSync();
+      alert('Historial y cola de sincronización locales borrados.');
+    };
+  }
+
+  function actualizarBotonSync() {
+    const btn = $('btnSincronizarAhora');
+    if (!btn) return;
+    if (Sync.estaSincronizando()) {
+      btn.disabled = true;
+      btn.textContent = 'Sincronizando…';
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'SINCRONIZAR AHORA';
+    }
   }
 
   async function actualizarInfoConfig() {
@@ -458,11 +492,14 @@ const App = (() => {
   async function actualizarBadgeSync() {
     const pendientes = await Sync.pendientesCount();
     const ind = $('syncIndicator');
-    if (pendientes === 0) {
+    if (Sync.estaSincronizando()) {
+      ind.textContent = 'Sincronizando…';
+    } else if (pendientes === 0) {
       ind.textContent = 'Sincronizado';
     } else {
       ind.textContent = `Pendientes: ${pendientes}`;
     }
+    actualizarBotonSync();
   }
 
   // ---------- Búsqueda ----------

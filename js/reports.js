@@ -68,6 +68,18 @@ const Reports = (() => {
     }
   }
 
+  // Timestamp real para ordenar. Las ventas nuevas ya lo traen (epoch ms,
+  // hora local). Las ventas viejas sin este campo (previas a esta corrección)
+  // se preservan tal cual están guardadas — no se migran ni se reescriben —
+  // y solo para efectos de orden se reconstruye un timestamp aproximado
+  // interpretando su Fecha+Hora ya guardadas como hora local.
+  function timestampDeVenta(v) {
+    if (typeof v.Timestamp === 'number') return v.Timestamp;
+    const [y, m, d] = (v.Fecha || '1970-01-01').split('-').map(Number);
+    const [hh, mm] = (v.Hora || '00:00').split(':').map(Number);
+    return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0).getTime();
+  }
+
   async function buscarHistorial({ fecha, texto } = {}) {
     let ventas = await DB.getAll('ventas');
     if (fecha) ventas = ventas.filter((v) => v.Fecha === fecha);
@@ -78,10 +90,14 @@ const Reports = (() => {
         String(v.TotalCobrado).includes(t) ||
         v.detalle.some((d) => d.Articulo.toLowerCase().includes(t)));
     }
-    return ventas.sort((a, b) => (b.Fecha + b.Hora).localeCompare(a.Fecha + a.Hora));
+    // Orden por timestamp real descendente (más reciente primero), no por
+    // texto: comparar "Fecha+Hora" como string rompía justo en el cambio de
+    // día, porque una venta de las 23:xx y otra de las 00:xx del día
+    // siguiente terminaban bajo la misma Fecha con "23:50" > "00:02".
+    return ventas.sort((a, b) => timestampDeVenta(b) - timestampDeVenta(a));
   }
 
-  return { resumenJornada, buscarHistorial, ventasDelDia };
+  return { resumenJornada, buscarHistorial, ventasDelDia, timestampDeVenta };
 })();
 
 window.Reports = Reports;

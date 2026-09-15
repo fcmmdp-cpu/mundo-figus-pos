@@ -3,9 +3,15 @@
 
 const Sales = (() => {
   function hoyFechaHora() {
+    // IMPORTANTE: usar componentes de hora LOCAL para Fecha y Hora por igual.
+    // Antes, Fecha salía de toISOString() (UTC) mientras Hora salía de
+    // toTimeString() (local): en Argentina (UTC-3) eso hacía que una venta
+    // entre ~21:00 y 23:59 local quedara con Fecha del día siguiente pero
+    // Hora "23:xx", generando orden y agrupación por jornada incorrectos.
     const d = new Date();
-    const fecha = d.toISOString().slice(0, 10);
-    const hora = d.toTimeString().slice(0, 5);
+    const pad = (n) => String(n).padStart(2, '0');
+    const fecha = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const hora = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
     return { fecha, hora, ts: d.getTime() };
   }
 
@@ -44,7 +50,7 @@ const Sales = (() => {
     }
 
     const idVenta = await IdGen.generarIdVenta();
-    const { fecha, hora } = hoyFechaHora();
+    const { fecha, hora, ts } = hoyFechaHora();
 
     // Costo total y distribución proporcional del descuento por línea.
     let costoTotal = 0;
@@ -78,6 +84,7 @@ const Sales = (() => {
       IDVenta: idVenta,
       Fecha: fecha,
       Hora: hora,
+      Timestamp: ts,
       Canal: 'Feria',
       Cliente: '',
       Localidad: '',
