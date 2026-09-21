@@ -122,3 +122,16 @@ Corregido en `css/styles.css`:
 - `.chips` pasa a fila única (`flex-wrap: nowrap`) con scroll horizontal táctil (`overflow-x: auto`, `-webkit-overflow-scrolling: touch`) y no se encoge (`flex-shrink: 0` en el contenedor y en cada botón).
 - `#panelProductos`, `.grid-productos`, `#panelCarrito` y `.lineas-carrito` reciben `min-height: 0` (y `min-width: 0` donde corresponde) para que el scroll vertical de la grilla de productos y del carrito funcionen de forma independiente dentro de sus contenedores flex, como ya venía funcionando el resto del diseño de escritorio/tablet — no se tocó nada de ese comportamiento.
 - La hoja "Feria Histórico" no se toca en ningún punto del código.
+
+## 12. Tres mejoras: orden alfabético, colección en combos, Detalle para reposición
+
+- **`js/catalog.js`**: `productosDeCaja()` y `combosDeCaja()` ahora ordenan A→Z por nombre (`localeCompare('es')`) antes de devolver el array. Es solo presentación: no reordena filas en Sheets ni cambia el orden de inserción en IndexedDB.
+- **`js/app.js`** — `renderProductos()`: la tarjeta de combo muestra ahora una línea con el nombre de la colección arriba del nombre del combo (solo en combos, solo si tienen colección cargada) — permite distinguir combos con nombre genérico repetido entre colecciones ("Álbum + 20 sobres" de Margarita vs. de otra).
+- **`js/app.js`** — `renderResumen()` / nueva `renderDetalleReposicion()`: agrega el bloque "Detalle para reposición" debajo de los totales existentes del Resumen de jornada, sin modificar nada de lo que ya mostraba.
+- **`js/reports.js`** — `resumenJornada(fecha)`: en el mismo recorrido que ya usa para sumar Álb./Figus/Naipes/Ext./Combos (que ya filtra por `Estado === 'Confirmada'` y ya expande combos vía `Detalle Combos`), ahora también acumula cantidad física por `ID Artículo` en un `Map`, resuelve el nombre desde `articulos` local y lo ordena alfabéticamente al final como `resumen.detalleReposicion`. Usa exclusivamente el store local `ventas` (nunca Sheets ni otros canales), por lo que funciona igual para jornadas futuras y para el sábado/domingo ya guardados en la tablet, siempre que sigan en IndexedDB.
+- **`index.html`**: agrega el contenedor `#detalleReposicionBody` dentro del modal de Resumen de jornada.
+- **`css/styles.css`**: estilos mínimos para la etiqueta de colección en tarjetas de combo (`.coleccion-combo`) y el subtítulo del nuevo bloque (`.subtitulo-resumen`).
+
+No se tocó `gas/Code.gs`, la sincronización, la estructura de IndexedDB (mismos stores/índices) ni ninguna otra pantalla.
+
+**Nota sobre el Detalle para reposición retroactivo (sábado/domingo):** se calcula usando la composición *actual* de `Detalle Combos` en IndexedDB, porque la app no guarda una "foto" de la composición del combo en el momento de cada venta. Confirmado por el usuario que la composición de los combos vendidos esos días no cambió desde entonces, así que el resultado es exacto para ambas jornadas.

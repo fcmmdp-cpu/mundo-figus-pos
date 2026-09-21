@@ -48,12 +48,20 @@ const Catalog = (() => {
     return { articulos: articulos.length, combos: combos.length };
   }
 
+  // Orden de presentación A→Z. No reordena nada en IndexedDB ni en Sheets:
+  // se aplica solo sobre el array que se muestra en la caja.
+  function ordenarPorNombre(items, campoNombre) {
+    return items.sort((a, b) =>
+      String(a[campoNombre] || '').localeCompare(String(b[campoNombre] || ''), 'es', { sensitivity: 'base' }));
+  }
+
   // Productos visibles en la caja: Activo=Sí, Mostrar en caja=Sí, Stock>0.
   async function productosDeCaja(categoria) {
     const articulos = await DB.getAll('articulos');
-    return articulos.filter((a) =>
+    const filtrados = articulos.filter((a) =>
       esSi(a.Activo) && esSi(a.MostrarEnCaja) && Number(a.Stock) > 0 &&
       (!categoria || a.Categoria === categoria));
+    return ordenarPorNombre(filtrados, 'Articulo');
   }
 
   async function combosDeCaja() {
@@ -64,7 +72,7 @@ const Catalog = (() => {
       const disp = await Stock.stockDisponibleCombo(c.IDCombo);
       if (disp > 0) conStock.push(c);
     }
-    return conStock;
+    return ordenarPorNombre(conStock, 'Nombre');
   }
 
   function esSi(valor) {

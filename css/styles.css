@@ -63,6 +63,10 @@ input { font-family: inherit; }
 .producto-card .nombre { font-size: 14px; font-weight: 600; line-height: 1.25; }
 .producto-card .precio { font-size: 18px; font-weight: 700; color: var(--naranja-osc); margin-top: 8px; }
 .producto-card.combo { background: #fff4e8; border: 2px solid var(--naranja); }
+.producto-card .coleccion-combo {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;
+  color: var(--naranja-osc); margin-bottom: 3px;
+}
 
 #panelCarrito {
   flex: 1; min-height: 0; min-width: 0; background: white; display: flex; flex-direction: column; border-left: 1px solid var(--gris-borde);
@@ -128,6 +132,7 @@ label { font-size: 13px; color: #555; font-weight: 600; }
 .item-historial { display: flex; justify-content: space-between; padding: 10px 6px; border-bottom: 1px solid #eee; }
 .item-historial.anulada { opacity: 0.5; text-decoration: line-through; }
 .info-chica { font-size: 12px; color: #777; margin: 4px 0 12px; }
+.subtitulo-resumen { font-size: 15px; margin: 16px 0 4px; padding-top: 10px; border-top: 1px solid var(--gris-borde); }
 
 .fila-espera { display: flex; justify-content: space-between; align-items: center; padding: 12px 6px; border-bottom: 1px solid #eee; }
 .fila-espera button { padding: 8px 14px; border: none; border-radius: 8px; background: var(--azul); color: white; font-size: 13px; margin-left: 6px; }

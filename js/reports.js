@@ -30,6 +30,23 @@ const Reports = (() => {
       combos: 0,
     };
 
+    // Detalle para reposición: cantidad física total consumida por artículo
+    // durante la jornada (combos desarmados en sus componentes reales según
+    // Detalle Combos, sumados a las ventas individuales del mismo artículo).
+    // Usa exclusivamente `ventas` (local, ya filtrado por Confirmada arriba),
+    // nunca Google Sheets ni otros canales.
+    const reposicionPorArticulo = new Map(); // ID Artículo -> { nombre, cantidad }
+
+    function sumarReposicion(idArticulo, cantidad) {
+      if (!idArticulo || !cantidad) return;
+      const actual = reposicionPorArticulo.get(idArticulo);
+      if (actual) {
+        actual.cantidad += cantidad;
+      } else {
+        reposicionPorArticulo.set(idArticulo, { idArticulo, nombre: null, cantidad });
+      }
+    }
+
     for (const v of ventas) {
       resumen.ventaTotal += Number(v.TotalCobrado || 0);
       resumen.ganancia += Number(v.Ganancia || 0);
@@ -44,14 +61,27 @@ const Reports = (() => {
           const componentes = await Stock.componentesDeCombo(d.IDProducto);
           for (const c of componentes) {
             const art = await DB.getByKey('articulos', c.IDArticulo);
-            sumarPorCategoria(resumen, categoriaDeLinea(art), c.Cantidad * d.Cantidad);
+            const cantidadFisica = Number(c.Cantidad) * Number(d.Cantidad);
+            sumarPorCategoria(resumen, categoriaDeLinea(art), cantidadFisica);
+            sumarReposicion(c.IDArticulo, cantidadFisica);
           }
         } else {
           const art = await DB.getByKey('articulos', d.IDProducto);
           sumarPorCategoria(resumen, categoriaDeLinea(art), d.Cantidad);
+          sumarReposicion(d.IDProducto, Number(d.Cantidad));
         }
       }
     }
+
+    // Resolver nombres y ordenar alfabéticamente. Un artículo que ya no
+    // exista en el catálogo local (borrado/descontinuado) igual se lista,
+    // con su ID como referencia, para no perder de vista esa reposición.
+    for (const entry of reposicionPorArticulo.values()) {
+      const art = await DB.getByKey('articulos', entry.idArticulo);
+      entry.nombre = art ? art.Articulo : `(${entry.idArticulo})`;
+    }
+    resumen.detalleReposicion = Array.from(reposicionPorArticulo.values())
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
 
     resumen.ticketPromedio = resumen.tickets > 0 ? resumen.ventaTotal / resumen.tickets : 0;
     resumen.efectivoSegunSistema = resumen.efectivo;

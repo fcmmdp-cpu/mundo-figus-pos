@@ -82,7 +82,12 @@ const App = (() => {
       card.className = 'producto-card' + (esCombo ? ' combo' : '');
       const nombre = esCombo ? item.Nombre : item.Articulo;
       const precio = esCombo ? item.PrecioVenta : item.PVenta;
-      card.innerHTML = `<div class="nombre">${nombre}</div><div class="precio">${fmt(precio)}</div>`;
+      // Colección visible solo en tarjetas de combo (varios combos comparten
+      // el mismo nombre genérico, ej. "Álbum + 20 sobres", en colecciones
+      // distintas) y solo cuando el combo tiene colección cargada.
+      const coleccionHtml = (esCombo && item.Coleccion)
+        ? `<div class="coleccion-combo">${item.Coleccion}</div>` : '';
+      card.innerHTML = `${coleccionHtml}<div class="nombre">${nombre}</div><div class="precio">${fmt(precio)}</div>`;
       card.onclick = () => {
         Cart.agregarUnidad(item, esCombo ? 'Combo' : 'Articulo');
         renderCarrito();
@@ -426,6 +431,22 @@ const App = (() => {
       <div class="linea-precio-row"><span>Combos</span><strong>${r.combos}</strong></div>
       <div class="linea-precio-row"><span>Efectivo según sistema</span><strong>${fmt(r.efectivoSegunSistema)}</strong></div>
     `;
+
+    renderDetalleReposicion(r.detalleReposicion);
+  }
+
+  // Detalle para reposición: cantidades físicas por artículo (combos ya
+  // desarmados por reports.js), exclusivamente de ventas locales de MF Caja
+  // de esa fecha. No es un resumen comercial: es para saber qué reponer.
+  function renderDetalleReposicion(detalle) {
+    const cont = $('detalleReposicionBody');
+    if (!detalle || detalle.length === 0) {
+      cont.innerHTML = '<p class="info-chica">Sin ventas físicas registradas para esta fecha.</p>';
+      return;
+    }
+    cont.innerHTML = detalle.map((d) =>
+      `<div class="linea-precio-row"><span>${d.nombre}</span><strong>${d.cantidad}</strong></div>`
+    ).join('');
   }
 
   // ---------- Configuración ----------
