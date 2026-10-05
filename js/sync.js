@@ -1,19 +1,23 @@
 // sync.js — Cola local de operaciones + envío idempotente a Google Apps Script.
-// Ninguna falla de red debe bloquear la venta: esto corre siempre en segundo plano.
+// Ninguna falla de red debe bloquear la venta: la venta siempre se guarda
+// local primero. La sincronización en sí es exclusivamente MANUAL: este
+// módulo nunca la dispara por su cuenta (ver nota al final del archivo).
 
 const Sync = (() => {
   let sincronizando = false;
   const listeners = [];
-  let intervaloReintento = null;
 
   function onEstadoCambia(fn) { listeners.push(fn); }
   function avisar() { listeners.forEach((fn) => fn()); }
   function estaSincronizando() { return sincronizando; }
 
+  // Encola la operación y listo. NO intenta sincronizar automáticamente:
+  // a partir de esta versión, la única forma de enviar algo a Google
+  // Sheets es tocar "SINCRONIZAR AHORA" en Configuración y confirmar la
+  // planilla de destino. La operación queda en syncQueue hasta entonces.
   async function encolar(op) {
     await DB.put('syncQueue', op);
     avisar();
-    if (navigator.onLine) intentarSincronizar();
   }
 
   async function pendientesCount() {
@@ -23,6 +27,26 @@ const Sync = (() => {
 
   async function getGasUrl() {
     return DB.getConfig('gasUrl', '');
+  }
+
+  // Identifica, en el momento, a qué planilla apunta el servidor (ver
+  // infoDestino_ en Code.gs). Es el chequeo de seguridad previo a
+  // sincronizar o actualizar catálogo: nunca escribe nada, y una falla acá
+  // (sin Internet, URL mal configurada, Script Properties sin
+  // SPREADSHEET_ID, etc.) se reporta como { ok: false } para que quien
+  // llama bloquee la operación en vez de asumir cualquier destino.
+  async function obtenerInfoDestino() {
+    try {
+      const url = await getGasUrl();
+      if (!url) return { ok: false, error: 'No hay URL de Google Apps Script configurada.' };
+      const res = await fetch(`${url}?action=infoDestino`);
+      if (!res.ok) return { ok: false, error: 'HTTP ' + res.status };
+      const json = await res.json();
+      if (!json.ok || !json.data) return { ok: false, error: (json && json.error) || 'Respuesta inválida del servidor.' };
+      return { ok: true, nombre: json.data.nombre, id: json.data.id };
+    } catch (err) {
+      return { ok: false, error: String(err.message || err) };
+    }
   }
 
   async function enviarOperacion(op) {
@@ -122,28 +146,18 @@ const Sync = (() => {
     }
   }
 
-  // Reintento al recuperar conexión (evento 'online' del navegador).
-  window.addEventListener('online', () => intentarSincronizar());
-
-  // Respaldo del evento 'online', que solo indica que la interfaz de red
-  // subió, no que la conexión ya sea utilizable de punta a punta: si el
-  // primer intento falla, este reintento periódico —moderado, no agresivo—
-  // termina de sincronizar apenas la conexión esté realmente disponible.
-  // No hace nada si no hay operaciones pendientes.
-  function iniciarReintentoPeriodico() {
-    if (intervaloReintento) return;
-    intervaloReintento = setInterval(async () => {
-      if (!navigator.onLine || sincronizando) return;
-      const pendientes = await pendientesCount();
-      if (pendientes > 0) intentarSincronizar();
-    }, 25000);
-  }
-
-  iniciarReintentoPeriodico();
+  // IMPORTANTE — sincronización exclusivamente manual (a pedido explícito
+  // del usuario): este módulo ya NO dispara intentarSincronizar() por su
+  // cuenta bajo ninguna circunstancia. No hay listener de 'online', no hay
+  // reintento periódico, y encolar() tampoco la llama. La única vía es que
+  // la UI (app.js, botón "SINCRONIZAR AHORA") la invoque directamente,
+  // después de que el usuario confirme la planilla de destino. Las
+  // operaciones pendientes simplemente se acumulan en syncQueue hasta ese
+  // momento — el funcionamiento offline no cambia en nada.
 
   return {
     encolar, pendientesCount, intentarSincronizar, onEstadoCambia,
-    getGasUrl, estaSincronizando,
+    getGasUrl, estaSincronizando, obtenerInfoDestino,
   };
 })();
 

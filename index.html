@@ -182,6 +182,7 @@
     <label>URL de Google Apps Script (Web App)</label>
     <input id="inputGasUrl" type="text" class="input-grande" placeholder="https://script.google.com/macros/s/.../exec">
     <button id="btnGuardarUrl" class="btn-opcion">Guardar URL</button>
+    <div id="planillaActivaInfo" class="info-chica"></div>
     <hr>
     <button id="btnActualizarCatalogo" class="btn-opcion">ACTUALIZAR CATÁLOGO</button>
     <div id="catalogoInfo" class="info-chica"></div>
@@ -202,6 +203,25 @@
     <p>Esta acción eliminará las ventas almacenadas localmente en este dispositivo. No modificará Google Sheets. ¿Continuar?</p>
     <button id="btnConfirmarResetPruebas" class="btn-peligro btn-opcion">SÍ, BORRAR</button>
     <button class="btn-cerrar" data-close="modalConfirmarReset">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal: confirmar planilla de destino antes de sincronizar / actualizar catálogo -->
+<div id="modalConfirmarDestino" class="modal hidden">
+  <div class="modal-box">
+    <h2 id="confirmarDestinoTitulo"></h2>
+    <p id="confirmarDestinoTexto"></p>
+    <button id="btnConfirmarDestinoOk" class="btn-cobrar">CONFIRMAR</button>
+    <button class="btn-cerrar" data-close="modalConfirmarDestino">CANCELAR</button>
+  </div>
+</div>
+
+<!-- Modal: bloqueo de seguridad — no se pudo verificar la planilla de destino -->
+<div id="modalBloqueoDestino" class="modal hidden">
+  <div class="modal-box">
+    <h2 class="alerta">No se pudo verificar el destino</h2>
+    <p id="bloqueoDestinoTexto"></p>
+    <button class="btn-cerrar" data-close="modalBloqueoDestino">Entendido</button>
   </div>
 </div>
 

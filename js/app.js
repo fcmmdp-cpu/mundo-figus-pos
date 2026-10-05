@@ -5,6 +5,9 @@ const App = (() => {
   let categoriaActual = 'Figuritas';
   let coleccionActual = null;
   let textoBusqueda = '';
+  // Acción (sincronizar o actualizar catálogo) que queda a la espera de que
+  // el usuario confirme la planilla de destino mostrada en modalConfirmarDestino.
+  let destinoAccionPendiente = null;
 
   function $(id) { return document.getElementById(id); }
   function fmt(n) {
@@ -170,6 +173,33 @@ const App = (() => {
     $('modalMensajeTexto').textContent = texto;
     abrirModal('modalMensaje');
     setTimeout(() => cerrarModal('modalMensaje'), ms);
+  }
+
+  // Bloqueo de seguridad: no se pudo verificar a qué planilla apunta el
+  // servidor. No se toca syncQueue ni ventas, no se intenta enviar ni
+  // descargar nada — el usuario cierra el aviso a mano (sin auto-cerrar,
+  // a diferencia de mostrarMensaje) y puede reintentar cuando quiera.
+  function mostrarBloqueoDestino(texto) {
+    $('bloqueoDestinoTexto').textContent = texto;
+    abrirModal('modalBloqueoDestino');
+  }
+
+  // Punto único de entrada para cualquier acción que necesite confirmar
+  // contra qué planilla está operando antes de ejecutarse (sincronizar,
+  // actualizar catálogo). Si infoDestino no puede verificarse, bloquea y
+  // no ejecuta `accion`. Si se verifica, muestra el nombre de la planilla
+  // y solo ejecuta `accion` cuando el usuario confirma. `textoConfirmarHtml`
+  // puede devolver HTML simple (ej. con <br>) para mostrar varias líneas.
+  async function pedirConfirmacionDestino({ titulo, textoBloqueo, textoConfirmarHtml, accion }) {
+    const info = await Sync.obtenerInfoDestino();
+    if (!info.ok) {
+      mostrarBloqueoDestino(textoBloqueo);
+      return;
+    }
+    $('confirmarDestinoTitulo').textContent = titulo;
+    $('confirmarDestinoTexto').innerHTML = textoConfirmarHtml(info.nombre);
+    destinoAccionPendiente = accion;
+    abrirModal('modalConfirmarDestino');
   }
 
   function wireCierreModales() {
@@ -462,21 +492,70 @@ const App = (() => {
       alert('URL guardada.');
     };
 
+    // Actualizar catálogo: SIEMPRE una acción manual y SIEMPRE requiere
+    // verificar y confirmar la planilla de origen antes de ejecutarse. Si
+    // no se puede verificar el destino, no se descarga ni modifica nada
+    // del catálogo local.
     $('btnActualizarCatalogo').onclick = async () => {
-      try {
-        const r = await Catalog.actualizarDesdeInternet();
-        alert(`Catálogo actualizado: ${r.articulos} artículos, ${r.combos} combos.`);
-        renderProductos();
-        await actualizarInfoConfig();
-      } catch (e) {
-        alert('Error al actualizar catálogo: ' + e.message);
-      }
+      await pedirConfirmacionDestino({
+        titulo: 'ACTUALIZAR CATÁLOGO',
+        textoBloqueo: 'No se pudo verificar la planilla de destino. El catálogo no se actualizará hasta poder verificar el destino.',
+        textoConfirmarHtml: (nombre) => `Planilla origen: <strong>${nombre}</strong>`,
+        accion: async () => {
+          try {
+            const r = await Catalog.actualizarDesdeInternet();
+            mostrarMensaje(`Catálogo actualizado: ${r.articulos} artículos, ${r.combos} combos.`);
+            renderProductos();
+            await actualizarInfoConfig();
+          } catch (e) {
+            mostrarMensaje('Error al actualizar catálogo: ' + e.message);
+          }
+        },
+      });
     };
 
+    // Sincronizar ahora: ÚNICA forma de enviar operaciones pendientes a
+    // Google Sheets — MF Caja ya no sincroniza nunca por su cuenta (ni
+    // después de una venta, ni al reconectar, ni con reintentos
+    // periódicos). Si no hay nada pendiente, no hay nada que verificar ni
+    // confirmar: se avisa y no se hace ninguna otra cosa. Si hay
+    // pendientes, exige verificar y confirmar el destino antes de
+    // intentar enviarlas. Si el destino no puede verificarse, la
+    // sincronización se bloquea por completo: no se toca syncQueue, no se
+    // modifica ninguna venta local, no se intenta enviar nada al
+    // servidor. Si se cancela la confirmación, tampoco se envía nada y
+    // todo queda pendiente igual que antes.
     $('btnSincronizarAhora').onclick = async () => {
-      await Sync.intentarSincronizar();
-      await actualizarInfoConfig();
-      actualizarBadgeSync();
+      const pendientes = await Sync.pendientesCount();
+      if (pendientes === 0) {
+        mostrarMensaje('No hay operaciones pendientes para sincronizar.');
+        return;
+      }
+      await pedirConfirmacionDestino({
+        titulo: 'SINCRONIZAR VENTAS',
+        textoBloqueo: 'No se pudo verificar la planilla de destino. Las ventas permanecen guardadas en la tablet.',
+        textoConfirmarHtml: (nombre) => `Operaciones pendientes: <strong>${pendientes}</strong><br>Planilla destino: <strong>${nombre}</strong>`,
+        accion: async () => {
+          await Sync.intentarSincronizar();
+          await actualizarInfoConfig();
+          actualizarBadgeSync();
+        },
+      });
+    };
+
+    $('btnConfirmarDestinoOk').onclick = async () => {
+      cerrarModal('modalConfirmarDestino');
+      const accion = destinoAccionPendiente;
+      destinoAccionPendiente = null;
+      if (accion) await accion();
+    };
+
+    // CANCELAR: no ejecuta nada y no deja una acción pendiente colgada.
+    // Todo lo que estuviera en syncQueue (o el catálogo local) queda
+    // exactamente como estaba.
+    document.querySelector('#modalConfirmarDestino [data-close]').onclick = () => {
+      destinoAccionPendiente = null;
+      cerrarModal('modalConfirmarDestino');
     };
 
     // Acción de mantenimiento, separada del flujo normal: borra SOLO
@@ -526,6 +605,22 @@ const App = (() => {
     $('catalogoInfo').textContent = last ? `Última actualización: ${new Date(last).toLocaleString('es-AR')}` : 'Todavía no se actualizó el catálogo.';
     const pendientes = await Sync.pendientesCount();
     $('syncInfo').textContent = `Pendientes de sincronizar: ${pendientes}`;
+    await actualizarPlanillaActivaInfo();
+  }
+
+  // Muestra, en Configuración, a qué planilla está apuntando el servidor en
+  // este momento. Es puramente informativo: no bloquea nada por sí solo —
+  // el bloqueo real ocurre recién al confirmar sincronizar/actualizar
+  // catálogo, vía pedirConfirmacionDestino(). Si no puede verificarse (sin
+  // conexión, URL no configurada, etc.), lo dice así, sin inventar un nombre.
+  async function actualizarPlanillaActivaInfo() {
+    const el = $('planillaActivaInfo');
+    if (!el) return;
+    el.textContent = 'Planilla activa: verificando...';
+    const info = await Sync.obtenerInfoDestino();
+    el.textContent = info.ok
+      ? `Planilla activa: ${info.nombre}`
+      : `Planilla activa: no se pudo verificar (${info.error})`;
   }
 
   // ---------- Indicador de sincronización ----------
@@ -565,8 +660,10 @@ const App = (() => {
     await actualizarBadgeEspera();
     await actualizarBadgeSync();
     Sync.onEstadoCambia(actualizarBadgeSync);
+    // Este intervalo SOLO refresca el indicador visual (cuántas pendientes
+    // hay); no sincroniza nada por sí mismo. La única forma de sincronizar
+    // es tocar "SINCRONIZAR AHORA" y confirmar la planilla de destino.
     setInterval(actualizarBadgeSync, 5000);
-    if (navigator.onLine) Sync.intentarSincronizar();
   }
 
   return { init };

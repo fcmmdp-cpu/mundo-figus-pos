@@ -1,5 +1,19 @@
 /**
  * Code.gs — Backend de Mundo Figus Caja.
+ *
+ * PROYECTO STANDALONE (no atado por contenedor a ningún Google Sheet
+ * puntual). La planilla activa se determina en runtime por el ID guardado
+ * en las Propiedades del script (Configuración del proyecto → Propiedades
+ * del script → clave SPREADSHEET_ID), nunca por "el Sheet desde el que se
+ * abrió el editor" — ese era el origen del incidente de sincronización
+ * cruzada entre meses: un script contenedor-vinculado se queda pegado para
+ * siempre al archivo original, y copiar la planilla cada mes no mueve esa
+ * vinculación.
+ *
+ * Cambio de mes: NO se toca este código ni se redeploya. Se actualiza
+ * únicamente el valor de SPREADSHEET_ID en Propiedades del script, apuntando
+ * al ID de la planilla nueva. La URL /exec de la Web App no cambia.
+ *
  * Desplegar como Web App (Implementar > Nueva implementación > Aplicación web).
  * Ejecutar como: Yo. Acceso: cualquiera con el enlace.
  * La URL /exec resultante se pega en Configuración > URL de Google Apps Script.
@@ -20,15 +34,25 @@ const SHEET_FERIA = 'Feria';
 // oculta, la primera vez que hace falta.
 const SHEET_LOG = 'Log Sync (no editar)';
 
+// Clave de la Propiedad del Script que guarda el ID de la planilla activa.
+const PROP_SPREADSHEET_ID = 'SPREADSHEET_ID';
+
 function ss_() {
-  return SpreadsheetApp.getActiveSpreadsheet();
+  const id = PropertiesService.getScriptProperties().getProperty(PROP_SPREADSHEET_ID);
+  if (!id) {
+    throw new Error(
+      'No hay ninguna planilla configurada: falta la Propiedad del Script "' +
+      PROP_SPREADSHEET_ID + '". Configuración del proyecto → Propiedades del script.'
+    );
+  }
+  return SpreadsheetApp.openById(id);
 }
 
 function respond_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
-// ---------------- GET: catálogo ----------------
+// ---------------- GET: catálogo / identificación de destino ----------------
 function doGet(e) {
   const action = e.parameter.action;
   try {
@@ -38,10 +62,21 @@ function doGet(e) {
     if (action === 'checkVenta') {
       return respond_({ ok: true, data: checkVenta_(e.parameter.id) });
     }
+    if (action === 'infoDestino') {
+      return respond_({ ok: true, data: infoDestino_() });
+    }
     return respond_({ ok: false, error: 'Acción no reconocida' });
   } catch (err) {
     return respond_({ ok: false, error: String(err) });
   }
+}
+
+// Solo lectura. Identifica, en el momento, a qué planilla está apuntando
+// esta Web App — para que MF Caja pueda mostrarlo y pedir confirmación
+// antes de sincronizar o actualizar catálogo. No modifica nada.
+function infoDestino_() {
+  const ss = ss_();
+  return { nombre: ss.getName(), id: ss.getId() };
 }
 
 // Solo lectura. Le permite al cliente confirmar si una venta puntual ya
