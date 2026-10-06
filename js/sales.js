@@ -146,31 +146,30 @@ const Sales = (() => {
     return { ok: true, venta };
   }
 
-  return { confirmarVenta, anularVenta, validarPedido };
+    async function verificarVentas0410() {
+    const ventas = await DB.getAll('ventas');
+
+    const seleccionadas = ventas.filter(v =>
+      v.Fecha === '2026-10-04' &&
+      v.Estado !== 'Anulada'
+    );
+
+    if (seleccionadas.length !== 172) {
+      alert(
+        `SEGURIDAD: se encontraron ${seleccionadas.length} ventas del 04/10. ` +
+        `Se esperaban exactamente 172. NO se modificó nada.`
+      );
+      return;
+    }
+
+    alert(
+      `Verificación correcta: se encontraron exactamente 172 ventas del 04/10. ` +
+      `NO se modificó nada.`
+    );
+  }
+  return { confirmarVenta, anularVenta, validarPedido, verificarVentas0410 };
 })();
 
 window.Sales = Sales;
 
 
-// TEMPORAL: verificar ventas locales del 04/10/2026
-window.verificarVentas0410 = async function () {
-  const ventas = await DB.getAll('ventas');
-
-  const seleccionadas = ventas.filter(v =>
-    v.Fecha === '2026-10-04' &&
-    v.Estado !== 'Anulada'
-  );
-
-  if (seleccionadas.length !== 172) {
-    alert(
-      `SEGURIDAD: se encontraron ${seleccionadas.length} ventas del 04/10. ` +
-      `Se esperaban exactamente 172. NO se modificó nada.`
-    );
-    return;
-  }
-
-  alert(
-    `Verificación correcta: se encontraron exactamente 172 ventas del 04/10. ` +
-    `NO se modificó nada.`
-  );
-};
