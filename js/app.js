@@ -525,6 +525,9 @@ const App = (() => {
     // modifica ninguna venta local, no se intenta enviar nada al
     // servidor. Si se cancela la confirmación, tampoco se envía nada y
     // todo queda pendiente igual que antes.
+    $('btnVerificarVentas0410').onclick = async () => {
+  await window.verificarVentas0410();
+};
     $('btnSincronizarAhora').onclick = async () => {
       const pendientes = await Sync.pendientesCount();
       if (pendientes === 0) {
