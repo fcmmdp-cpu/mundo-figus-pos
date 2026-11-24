@@ -146,3 +146,67 @@ label { font-size: 13px; color: #555; font-weight: 600; }
   #posScreen { flex-direction: column; }
   #panelCarrito { border-left: none; border-top: 1px solid var(--gris-borde); max-height: 45%; }
 }
+
+/* ---------- Estadísticas (solo lectura) ----------
+   Reglas nuevas y con prefijo propio: no modifican ninguna regla anterior. */
+.modal-box.modal-stats {
+  width: 98%; max-width: 1100px; height: 94vh; max-height: 94vh; padding: 12px 16px;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.stats-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex-shrink: 0; }
+.stats-head h2 { margin: 0; font-size: 20px; }
+.stats-controles { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 240px; }
+.stats-select {
+  flex: 1; min-width: 0; min-height: 44px; font-size: 16px; padding: 8px 12px; color: var(--texto);
+  border: 1px solid var(--gris-borde); border-radius: 10px; background: white;
+}
+.stats-nav { width: 48px; min-height: 44px; border: 1px solid var(--gris-borde); background: white; border-radius: 10px; font-size: 16px; }
+.stats-nav:disabled { opacity: 0.35; }
+.stats-cerrar { width: auto; margin-top: 0; padding: 10px 20px; min-height: 44px; }
+
+.stats-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 10px 0; flex-shrink: 0; }
+.stats-kpis-chicos { margin: 6px 0 0; }
+.stats-tile { background: var(--gris-fondo); border-radius: 10px; padding: 8px 10px; }
+.stats-tile-et { font-size: 12px; color: #666; font-weight: 600; }
+.stats-tile-val { font-size: 20px; font-weight: 800; color: var(--naranja-osc); line-height: 1.25; }
+.stats-tile-sub { font-size: 11px; color: #777; }
+
+.stats-tabs { display: flex; gap: 6px; overflow-x: auto; flex-shrink: 0; padding-bottom: 8px; border-bottom: 1px solid var(--gris-borde); -webkit-overflow-scrolling: touch; }
+.stats-tab {
+  flex-shrink: 0; min-height: 44px; padding: 8px 16px; border: none; border-radius: 10px; white-space: nowrap;
+  background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.12); font-size: 15px; font-weight: 700;
+}
+.stats-tab.activo { background: var(--naranja); color: white; }
+
+.stats-panel { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 10px 2px; }
+.stats-seccion { margin-bottom: 22px; }
+.stats-seccion h3 { margin: 0 0 4px; font-size: 16px; }
+.stats-nota { font-size: 12px; color: #777; margin: 2px 0 8px; }
+.stats-destacado { font-size: 13px; font-weight: 600; color: var(--naranja-osc); margin: 4px 0 6px; }
+.stats-chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 8px; }
+.stats-chip { min-height: 40px; padding: 6px 14px; border-radius: 20px; border: 1px solid var(--gris-borde); background: white; font-size: 14px; }
+.stats-chip.activo { background: var(--azul); border-color: var(--azul); color: white; }
+
+.stats-chart svg { display: block; width: 100%; height: auto; max-height: 300px; }
+.stats-chart-lista svg { max-height: none; } /* rankings: altos por naturaleza, no se achican */
+.stats-leyenda { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; margin: 4px 0; }
+.stats-leyenda i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; margin-right: 6px; vertical-align: -2px; }
+.stats-lectura { font-size: 13px; min-height: 20px; margin-top: 4px; color: #444; background: var(--gris-fondo); border-radius: 8px; padding: 6px 10px; }
+.stats-vacio { padding: 24px 12px; text-align: center; color: #777; font-size: 14px; }
+
+.stats-tabla { width: 100%; border-collapse: collapse; font-size: 14px; margin: 8px 0; }
+.stats-tabla th, .stats-tabla td { padding: 8px 10px; border-bottom: 1px solid #eee; text-align: right; }
+.stats-tabla th:first-child, .stats-tabla td:first-child { text-align: left; }
+.stats-fila-et { font-weight: 600; }
+.stats-delta.sube { color: var(--verde); font-weight: 700; }
+.stats-delta.baja { color: var(--rojo); font-weight: 700; }
+.stats-delta.igual { color: #777; }
+.stats-comp-selectores { display: flex; gap: 12px; flex-wrap: wrap; margin: 6px 0; }
+.stats-comp-sel { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; flex: 1; min-width: 240px; }
+.stats-pie { flex-shrink: 0; border-top: 1px solid var(--gris-borde); padding-top: 6px; margin: 0; line-height: 1.35; }
+
+/* Pantallas bajas (celular en horizontal): todo el modal se desplaza en conjunto. */
+@media (max-height: 520px) {
+  .modal-box.modal-stats { height: auto; display: block; overflow-y: auto; }
+  .stats-panel { overflow: visible; }
+}
