@@ -19,6 +19,7 @@
     <button data-action="espera">En espera <span id="badgeEspera" class="badge hidden">0</span></button>
     <button data-action="historial">Historial</button>
     <button data-action="resumen">Resumen de jornada</button>
+    <button data-action="stats">Estadísticas</button>
     <button data-action="config">Configuración</button>
   </nav>
 </header>
@@ -175,6 +176,25 @@
   </div>
 </div>
 
+<!-- Modal: estadísticas (solo lectura; ver js/stats-ui.js) -->
+<div id="modalStats" class="modal hidden">
+  <div class="modal-box modal-stats">
+    <div class="stats-head">
+      <h2>Estadísticas</h2>
+      <div class="stats-controles">
+        <button id="statsPrev" class="stats-nav" type="button" aria-label="Jornada anterior">◀</button>
+        <select id="statsJornada" class="stats-select" aria-label="Jornada"></select>
+        <button id="statsNext" class="stats-nav" type="button" aria-label="Jornada siguiente">▶</button>
+      </div>
+      <button class="btn-cerrar stats-cerrar" data-close="modalStats" type="button">Cerrar</button>
+    </div>
+    <div id="statsKpis" class="stats-kpis"></div>
+    <div id="statsTabs" class="stats-tabs" role="tablist"></div>
+    <div id="statsPanel" class="stats-panel"></div>
+    <div id="statsPie" class="stats-pie info-chica"></div>
+  </div>
+</div>
+
 <!-- Modal: configuración -->
 <div id="modalConfig" class="modal hidden">
   <div class="modal-box">
@@ -188,8 +208,10 @@
     <div id="catalogoInfo" class="info-chica"></div>
     <hr>
     <button id="btnSincronizarAhora" class="btn-opcion">SINCRONIZAR AHORA</button>
-    <button id="btnVerificarVentas0410" class="btn-opcion">VERIFICAR VENTAS 04/10</button>
     <div id="syncInfo" class="info-chica"></div>
+    <hr>
+    <button id="btnExportarRespaldo" class="btn-opcion">Exportar respaldo de ventas</button>
+    <div id="respaldoInfo" class="info-chica">Descarga un archivo JSON con todas las ventas de este dispositivo. Solo lee: no modifica, no borra y no sincroniza nada.</div>
     <hr>
     <button id="btnResetPruebas" class="btn-peligro btn-opcion">Borrar ventas de prueba (local)</button>
     <div class="info-chica">Elimina únicamente Historial y cola de sincronización de este dispositivo. NO toca catálogo, artículos, combos ni configuración. Usar solo después de haber corrido el reset en Google Sheets.</div>
@@ -242,6 +264,10 @@
 <script src="/mundo-figus-pos/js/sales.js"></script>
 <script src="/mundo-figus-pos/js/espera.js"></script>
 <script src="/mundo-figus-pos/js/reports.js"></script>
+<script src="/mundo-figus-pos/js/stats.js"></script>
+<script src="/mundo-figus-pos/js/charts.js"></script>
+<script src="/mundo-figus-pos/js/stats-ui.js"></script>
+<script src="/mundo-figus-pos/js/respaldo.js"></script>
 <script src="/mundo-figus-pos/js/app.js"></script>
 </body>
 </html>
