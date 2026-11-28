@@ -525,9 +525,15 @@ const App = (() => {
     // modifica ninguna venta local, no se intenta enviar nada al
     // servidor. Si se cancela la confirmación, tampoco se envía nada y
     // todo queda pendiente igual que antes.
-    $('btnVerificarVentas0410').onclick = async () => {
-  await window.Sales.verificarVentas0410();
-};
+    // Protección: si el botón no está en index.html (por ejemplo, tras
+    // reemplazar ese archivo por otra versión), NO debe abortar la
+    // configuración del resto de los botones (CONFIRMAR, SINCRONIZAR AHORA, etc.).
+    const btnVerificarVentas0410 = $('btnVerificarVentas0410');
+    if (btnVerificarVentas0410) {
+      btnVerificarVentas0410.onclick = async () => {
+        await window.Sales.verificarVentas0410();
+      };
+    }
     $('btnSincronizarAhora').onclick = async () => {
       const pendientes = await Sync.pendientesCount();
       if (pendientes === 0) {
@@ -652,14 +658,20 @@ const App = (() => {
     renderCategorias();
     await renderProductos();
     renderCarrito();
-    wireCierreModales();
-    wireCobro();
-    wireMas();
-    wireEspera();
-    wireHistorial();
-    wireResumen();
-    wireConfig();
-    wireBusqueda();
+    // Cada bloque de botones se conecta de forma aislada: si uno falla (p. ej.
+    // falta un elemento en index.html), se registra el error en consola y los
+    // demás (búsqueda, indicadores, sincronización manual) siguen funcionando.
+    const seguro = (nombre, fn) => {
+      try { fn(); } catch (e) { console.error('MF Caja: falló la conexión de "' + nombre + '":', e); }
+    };
+    seguro('cierre de modales', wireCierreModales);
+    seguro('cobro', wireCobro);
+    seguro('más', wireMas);
+    seguro('espera', wireEspera);
+    seguro('historial', wireHistorial);
+    seguro('resumen', wireResumen);
+    seguro('configuración', wireConfig);
+    seguro('búsqueda', wireBusqueda);
     await actualizarBadgeEspera();
     await actualizarBadgeSync();
     Sync.onEstadoCambia(actualizarBadgeSync);
