@@ -14,7 +14,7 @@
 // —aunque el hosting tenga archivos más nuevos— hasta que detecte un cambio acá.
 
 const BASE = '/mundo-figus-pos/';
-const CACHE_NAME = 'mundo-figus-pos-v9';
+const CACHE_NAME = 'mundo-figus-pos-v10';
 const INDEX_URL = BASE + 'index.html';
 
 const ARCHIVOS = [
